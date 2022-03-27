@@ -167,7 +167,7 @@ static int MRH_AcceptStreamConnection(MRH_LocalStream* p_Stream)
     socklen_t us_ClientLen;
     
     if ((i_FD = accept(p_Stream->i_ConnectionFD, (struct sockaddr*)&c_Adress, &us_ClientLen)) < 0 || 
-             fcntl(i_FD, F_SETFL, fcntl(i_FD, F_GETFL, 0) | O_NONBLOCK) < 0)
+        fcntl(i_FD, F_SETFL, fcntl(i_FD, F_GETFL, 0) | O_NONBLOCK) < 0)
     {
         close(i_FD);
         
@@ -301,8 +301,6 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
                        &(p_Recieve->p_Buffer[p_Recieve->u32_SizeHandled]), 
                        us_Remaining);
         
-        printf("Read %zd bytes\n", ss_Read);
-        
         if (ss_Read < 0)
         {
             if (errno != EWOULDBLOCK && errno != EAGAIN)
@@ -321,7 +319,6 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
             // Realloc to to match buffer
             if (p_Recieve->u32_SizeTotal > p_Recieve->u32_SizeBuffer)
             {
-                printf("Realloc Buffer...\n");
                 MRH_Uint8* p_Buffer = (MRH_Uint8*)realloc(p_Recieve->p_Buffer, p_Recieve->u32_SizeTotal);
             
                 if (p_Buffer == NULL)
@@ -332,8 +329,6 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
                 
                 p_Recieve->p_Buffer = p_Buffer;
                 p_Recieve->u32_SizeBuffer = p_Recieve->u32_SizeTotal;
-                
-                printf("Buffer reallocated to %u\n", p_Recieve->u32_SizeBuffer);
             }
             
             us_Remaining = p_Recieve->u32_SizeTotal - p_Recieve->u32_SizeHandled;
@@ -501,11 +496,18 @@ int MRH_LS_GetLastMessageData(MRH_LocalStream* p_Stream, void* p_Data)
         return -1;
     }
     
+    // Get the size and buffer of the message data.
     MRH_Uint8* p_Buffer;
     MRH_Uint32 u32_SizeTotal;
     
     MRH_GetStreamMessageData(p_Stream->p_Recieve, &p_Buffer, &u32_SizeTotal);
     
+    // Next reset the message, so that reading works even after a 
+    // failure
+    p_Stream->p_Recieve->u32_SizeTotal = 0;
+    p_Stream->p_Recieve->u32_SizeHandled = 0;
+    
+    // Can get message data?
     if (p_Buffer == NULL)
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
@@ -585,10 +587,6 @@ int MRH_LS_GetLastMessageData(MRH_LocalStream* p_Stream, void* p_Data)
             return -1;
         }
     }
-    
-    // We need to reset the message here
-    p_Stream->p_Recieve->u32_SizeTotal = 0;
-    p_Stream->p_Recieve->u32_SizeHandled = 0;
     
     return 0;
 }
