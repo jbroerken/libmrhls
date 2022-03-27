@@ -60,6 +60,21 @@ extern "C"
     extern MRH_LocalStream* MRH_LS_Open(const char* p_FilePath, int i_Create);
     
     //*************************************************************************************
+    // Connect
+    //*************************************************************************************
+    
+    /**
+     *  Connect a opened local stream. This function blocks until a connection was 
+     *  established.
+     *  
+     *  \param p_Stream The stream to connect with.  
+     *  
+     *  \return 0 on success, -1 on failure.
+     */
+    
+    extern int MRH_LS_Connect(MRH_LocalStream* p_Stream);
+    
+    //*************************************************************************************
     // Read
     //*************************************************************************************
     

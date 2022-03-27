@@ -131,7 +131,6 @@ MRH_LocalStream* MRH_LS_Open(const char* p_FilePath, int i_Create)
     strcpy(c_Address.sun_path, p_FilePath);
     
     if (bind(i_FD, (struct sockaddr*)&c_Address, sizeof(c_Address)) < 0 ||
-        fcntl(i_FD, F_SETFL, fcntl(i_FD, F_GETFL, 0) | O_NONBLOCK) < 0 ||
         listen(i_FD, 1) < 0) // 1 = Connection backlog, only 1 is allowed
     {
         close(i_FD);
@@ -219,7 +218,7 @@ static int MRH_ConnectToStream(MRH_LocalStream* p_Stream)
     return 0;
 }
 
-static inline int MRH_ConnectLocalStream(MRH_LocalStream* p_Stream)
+int MRH_LS_Connect(MRH_LocalStream* p_Stream)
 {
     if (p_Stream->i_IsServer < 0)
     {
@@ -253,7 +252,7 @@ static inline int MRH_UpdateReadSize(MRH_CurrentStreamMessage* p_Message)
 
 int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
 {
-    if (p_Stream == NULL)
+    if (p_Stream == NULL || p_Stream->i_MessageFD < 0)
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
         return -1;
@@ -262,10 +261,6 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
              (p_Stream->p_Recieve->u32_SizeHandled == p_Stream->p_Recieve->u32_SizeTotal))
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_MESSAGE_AVAILABLE);
-        return -1;
-    }
-    else if (p_Stream->i_MessageFD < 0 && MRH_ConnectLocalStream(p_Stream) < 0)
-    {
         return -1;
     }
     
@@ -357,13 +352,9 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
 
 int MRH_LS_Write(MRH_LocalStream* p_Stream)
 {
-    if (p_Stream == NULL)
+    if (p_Stream == NULL || p_Stream->i_MessageFD < 0)
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-        return -1;
-    }
-    else if (p_Stream->i_MessageFD < 0 && MRH_ConnectLocalStream(p_Stream) < 0)
-    {
         return -1;
     }
     
