@@ -357,6 +357,11 @@ int MRH_LS_Write(MRH_LocalStream* p_Stream)
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
         return -1;
     }
+    else if (MRH_LS_GetMessageSet(p_Stream) < 0)
+    {
+        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_MESSAGE_NO_DATA);
+        return -1;
+    }
     
     MRH_CurrentStreamMessage* p_Send = p_Stream->p_Send;
     ssize_t ss_Write;
@@ -609,6 +614,23 @@ int MRH_LS_GetLastMessageData(MRH_LocalStream* p_Stream, void* p_Data)
     }
     
     return 0;
+}
+
+int MRH_LS_GetMessageSet(MRH_LocalStream* p_Stream)
+{
+    if (p_Stream == NULL)
+    {
+        return -1;
+    }
+    
+    MRH_CurrentStreamMessage* p_Send = p_Stream->p_Send;
+    
+    if (p_Send->u32_SizeTotal > 0 && p_Send->u32_SizeTotal > p_Send->u32_SizeHandled)
+    {
+        return 0;
+    }
+    
+    return -1;
 }
 
 //*************************************************************************************

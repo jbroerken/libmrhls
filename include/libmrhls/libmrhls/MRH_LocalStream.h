@@ -164,6 +164,16 @@ extern "C"
     
     extern int MRH_LS_GetLastMessageData(MRH_LocalStream* p_Stream, void* p_Data);
     
+    /**
+     *  Check if a message to write is set.
+     *  
+     *  \param p_Stream The stream to check.      
+     *  
+     *  \return 0 if set, -1 if not.
+     */
+    
+    extern int MRH_LS_GetMessageSet(MRH_LocalStream* p_Stream);
+    
     //*************************************************************************************
     // Setters
     //*************************************************************************************
