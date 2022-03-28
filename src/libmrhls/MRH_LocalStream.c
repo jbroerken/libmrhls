@@ -393,6 +393,25 @@ int MRH_LS_Write(MRH_LocalStream* p_Stream)
 }
 
 //*************************************************************************************
+// Disconnect
+//*************************************************************************************
+
+void MRH_LS_Disconnect(MRH_LocalStream* p_Stream)
+{
+    if (p_Stream == NULL)
+    {
+        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
+        return;
+    }
+    
+    close(p_Stream->i_MessageFD);
+    p_Stream->i_MessageFD = -1;
+    
+    // @NOTE: No reset, only on connect! Messages of disconnected stream can be 
+    //        read later
+}
+
+//*************************************************************************************
 // Close
 //*************************************************************************************
 
@@ -426,6 +445,16 @@ MRH_LocalStream* MRH_LS_Close(MRH_LocalStream* p_Stream)
 //*************************************************************************************
 // Getters
 //*************************************************************************************
+
+int MRH_LS_GetConnected(MRH_LocalStream* p_Stream)
+{
+    if (p_Stream == NULL || p_Stream->i_MessageFD < 0)
+    {
+        return -1;
+    }
+    
+    return 0;
+}
 
 static inline MRH_StreamMessage MRH_GetStreamMessageType(MRH_CurrentStreamMessage* p_Message)
 {

@@ -104,6 +104,18 @@ extern "C"
     extern int MRH_LS_Write(MRH_LocalStream* p_Stream);
     
     //*************************************************************************************
+    // Disconnect
+    //*************************************************************************************
+    
+    /**
+     *  Disconnect a local stream.
+     *  
+     *  \param p_Stream The stream to disconnect.  
+     */
+    
+    extern void MRH_LS_Disconnect(MRH_LocalStream* p_Stream);
+    
+    //*************************************************************************************
     // Close
     //*************************************************************************************
     
@@ -120,6 +132,16 @@ extern "C"
     //*************************************************************************************
     // Getters
     //*************************************************************************************
+    
+    /**
+     *  Check if the local stream is connected.
+     *  
+     *  \param p_Stream The stream to check.    
+     *  
+     *  \return 0 if connected, -1 if not.
+     */
+    
+    extern int MRH_LS_GetConnected(MRH_LocalStream* p_Stream);
     
     /**
      *  Get the currently read local stream message.
