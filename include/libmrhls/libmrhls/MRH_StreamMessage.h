@@ -134,8 +134,8 @@ extern "C"
     typedef struct MRH_LS_M_Audio_Data_t
     {
         MRH_Uint32 u32_KHz;
-        MRH_Uint32 u32_Samples;
-        MRH_Sint16 p_Samples[MRH_STREAM_MESSAGE_BUFFER_SIZE - (sizeof(MRH_Uint32) * 2)]; // Mono
+        MRH_Uint32 u32_Samples; // Not included in buffer!
+        MRH_Sint16 p_Samples[MRH_STREAM_MESSAGE_BUFFER_SIZE - sizeof(MRH_Uint32)]; // Mono
         
     }MRH_LS_M_Audio_Data;
     
