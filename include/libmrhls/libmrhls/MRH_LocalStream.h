@@ -157,6 +157,15 @@ extern "C"
     
     extern int MRH_LS_GetConnected(MRH_LocalStream* p_Stream);
     
+    /**
+     *  Check if a write message is currently set.
+     *  
+     *  \param p_Stream The stream to check.    
+     *  
+     *  \return 0 if set, -1 if not.  
+     */
+    
+    extern int MRH_LS_GetWriteMessageSet(MRH_LocalStream* p_Stream);
     
 #ifdef __cplusplus
 }

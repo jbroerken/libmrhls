@@ -322,7 +322,7 @@ int MRH_LS_Write(MRH_LocalStream* p_Stream, const MRH_Uint8* p_Buffer, MRH_Uint3
     // Replace with given buffer?
     MRH_CurrentStreamMessage* p_Send = &(p_Stream->c_Send);
     
-    if (p_Send->u32_Handled == MRH_GetTotalSize(p_Send))
+    if (MRH_LS_GetWriteMessageSet(p_Stream) < 0)
     {
         // Valid source given?
         if (p_Buffer == NULL || u32_Size > STREAM_MESSAGE_SEND_BUFFER_SIZE - (sizeof(MRH_Uint32) * 2))
@@ -410,12 +410,6 @@ void MRH_LS_Disconnect(MRH_LocalStream* p_Stream)
 // Close
 //*************************************************************************************
 
-static void CloseCurrentMessage(MRH_CurrentStreamMessage* p_Message)
-{
-    free(p_Message->p_Buffer);
-    free(p_Message);
-}
-
 MRH_LocalStream* MRH_LS_Close(MRH_LocalStream* p_Stream)
 {
     if (p_Stream == NULL)
@@ -441,6 +435,21 @@ MRH_LocalStream* MRH_LS_Close(MRH_LocalStream* p_Stream)
 int MRH_LS_GetConnected(MRH_LocalStream* p_Stream)
 {
     if (p_Stream == NULL || p_Stream->i_MessageFD < 0)
+    {
+        return -1;
+    }
+    
+    return 0;
+}
+
+int MRH_LS_GetWriteMessageSet(MRH_LocalStream* p_Stream)
+{
+    if (p_Stream == NULL)
+    {
+        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
+        return -1;
+    }
+    else if (p_Stream->c_Send.u32_Handled == MRH_GetTotalSize(&(p_Stream->c_Send)))
     {
         return -1;
     }
