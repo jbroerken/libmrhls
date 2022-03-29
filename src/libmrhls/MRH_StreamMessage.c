@@ -72,7 +72,7 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
         case MRH_LS_M_STRING:
         {
             const MRH_LS_M_String_Data* p_Cast = (const MRH_LS_M_String_Data*)p_Data;
-            MRH_Uint32 u32_Size = strnlen(p_Cast->p_String, STREAM_MESSAGE_BUFFER_SIZE);
+            MRH_Uint32 u32_Size = strnlen(p_Cast->p_String, MRH_STREAM_MESSAGE_BUFFER_SIZE);
             
             memcpy(p_Buffer, p_Cast->p_String, u32_Size);
             
@@ -128,7 +128,7 @@ MRH_LS_Message MRH_LS_GetBufferMessage(const MRH_Uint8* p_Buffer)
 
 int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u32_Size)
 {
-    if (p_Buffer == NULL || p_Data == NULL || u32_Size > STREAM_MESSAGE_BUFFER_SIZE)
+    if (p_Buffer == NULL || p_Data == NULL || u32_Size > MRH_STREAM_MESSAGE_BUFFER_SIZE)
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
         return -1;
@@ -177,7 +177,7 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
             
             MRH_LS_M_String_Data* p_Cast = (MRH_LS_M_String_Data*)p_Data;
             
-            memset(p_Cast->p_String, '\0', STREAM_MESSAGE_BUFFER_SIZE);
+            memset(p_Cast->p_String, '\0', MRH_STREAM_MESSAGE_BUFFER_SIZE);
             memcpy(p_Cast->p_String, p_Buffer, u32_Size);
             break;
         }
