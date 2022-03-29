@@ -40,32 +40,31 @@
 
 
 //*************************************************************************************
-// Open
+// Message
 //*************************************************************************************
 
-static MRH_CurrentStreamMessage* MRH_CreateStreamMessage(void)
+static inline void MRH_ResetMessage(MRH_CurrentStreamMessage* p_Message)
 {
-    MRH_CurrentStreamMessage* p_Message = (MRH_CurrentStreamMessage*)malloc(sizeof(MRH_CurrentStreamMessage));
-    
-    if (p_Message == NULL)
-    {
-        return NULL;
-    }
-    
-    p_Message->u32_SizeBuffer = sizeof(MRH_Uint32) * 2;
-    p_Message->p_Buffer = (MRH_Uint8*)malloc(p_Message->u32_SizeBuffer);
-    
-    if (p_Message->p_Buffer == NULL)
-    {
-        free(p_Message);
-        return NULL;
-    }
-    
-    p_Message->u32_SizeTotal = 0;
-    p_Message->u32_SizeHandled = 0;
-    
-    return p_Message;
+    // @NOTE: Only reset size and type
+    memset(p_Message->p_Buffer, '\0', sizeof(MRH_Uint32) * 2);
+    p_Message->u32_Handled = 0;
 }
+
+static inline MRH_Uint32 MRH_GetTotalSize(MRH_CurrentStreamMessage* p_Message)
+{
+    MRH_Uint32 u32_TotalSize = *((MRH_Uint32*)(p_Message->p_Buffer));
+    
+    if (u32_TotalSize > STREAM_MESSAGE_SEND_BUFFER_SIZE)
+    {
+        u32_TotalSize = STREAM_MESSAGE_SEND_BUFFER_SIZE;
+    }
+    
+    return u32_TotalSize;
+}
+
+//*************************************************************************************
+// Open
+//*************************************************************************************
 
 static MRH_LocalStream* MRH_CreateStreamObject(const char* p_FilePath, int i_IsServer)
 {
@@ -75,24 +74,16 @@ static MRH_LocalStream* MRH_CreateStreamObject(const char* p_FilePath, int i_IsS
     {
         return NULL;
     }
-    else if ((p_Stream->p_Recieve = MRH_CreateStreamMessage()) == NULL)
-    {
-        free(p_Stream);
-        return NULL;
-    }
-    else if ((p_Stream->p_Send = MRH_CreateStreamMessage()) == NULL)
-    {
-        free(p_Stream->p_Recieve);
-        free(p_Stream);
-        return NULL;
-    }
+    
+    MRH_ResetMessage(&(p_Stream->c_Send));
+    MRH_ResetMessage(&(p_Stream->c_Recieve));
     
     p_Stream->i_ConnectionFD = -1;
     p_Stream->i_MessageFD = -1;
     p_Stream->i_IsServer = i_IsServer;
     
-    memset(p_Stream->p_FilePath, '\0', 2048);
-    strncpy(p_Stream->p_FilePath, p_FilePath, 2048);
+    memset(p_Stream->p_FilePath, '\0', LOCAL_STREAM_FILE_PATH_SIZE);
+    strncpy(p_Stream->p_FilePath, p_FilePath, LOCAL_STREAM_FILE_PATH_SIZE);
     
     return p_Stream;
 }
@@ -148,17 +139,6 @@ MRH_LocalStream* MRH_LS_Open(const char* p_FilePath, int i_Create)
 // Connect
 //*************************************************************************************
 
-static void MRH_ResetOnConnection(MRH_LocalStream* p_Stream)
-{
-    // For sending we simply reset currently handled to send from
-    // the beginning
-    p_Stream->p_Send->u32_SizeHandled = 0;
-    
-    // Recieving needs to have both total and handled reset
-    p_Stream->p_Recieve->u32_SizeTotal = 0;
-    p_Stream->p_Recieve->u32_SizeHandled = 0;
-}
-
 static int MRH_AcceptStreamConnection(MRH_LocalStream* p_Stream)
 {
     int i_FD;
@@ -176,7 +156,8 @@ static int MRH_AcceptStreamConnection(MRH_LocalStream* p_Stream)
     
     // Reset current send state to send and recieve from
     // beginning (for currently set messages)
-    MRH_ResetOnConnection(p_Stream);
+    MRH_ResetMessage(&(p_Stream->c_Send));
+    MRH_ResetMessage(&(p_Stream->c_Recieve));
     
     p_Stream->i_MessageFD = i_FD;
     
@@ -211,7 +192,8 @@ static int MRH_ConnectToStream(MRH_LocalStream* p_Stream)
     
     // Reset current send state to send and recieve from
     // beginning (for currently set messages)
-    MRH_ResetOnConnection(p_Stream);
+    MRH_ResetMessage(&(p_Stream->c_Send));
+    MRH_ResetMessage(&(p_Stream->c_Recieve));
     
     p_Stream->i_MessageFD = i_FD;
     
@@ -234,33 +216,21 @@ int MRH_LS_Connect(MRH_LocalStream* p_Stream)
 // Read
 //*************************************************************************************
 
-static inline int MRH_UpdateReadSize(MRH_CurrentStreamMessage* p_Message)
+static inline MRH_Uint32 MRH_GetReadSize(MRH_CurrentStreamMessage* p_Message)
 {
-    if (p_Message->u32_SizeTotal < sizeof(MRH_Uint32))
+    if (p_Message->u32_Handled < sizeof(MRH_Uint32))
     {
-        p_Message->u32_SizeTotal = sizeof(MRH_Uint32);
-        return 0;
-    }
-    else if (p_Message->u32_SizeTotal < (*(MRH_Uint32*)(p_Message->p_Buffer)))
-    {
-        p_Message->u32_SizeTotal = (*(MRH_Uint32*)(p_Message->p_Buffer));
-        return 0;
+        return sizeof(MRH_Uint32);
     }
     
-    return -1;
+    return MRH_GetTotalSize(p_Message);
 }
 
-int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
+int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS, MRH_Uint8* p_Buffer, MRH_Uint32* p_Size)
 {
     if (p_Stream == NULL || p_Stream->i_MessageFD < 0)
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-        return -1;
-    }
-    else if (p_Stream->p_Recieve->u32_SizeHandled > 0 && 
-             (p_Stream->p_Recieve->u32_SizeHandled == p_Stream->p_Recieve->u32_SizeTotal))
-    {
-        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_MESSAGE_AVAILABLE);
         return -1;
     }
     
@@ -276,26 +246,47 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
             return -1;
         case 0:
             MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_SOCKET_NO_DATA);
-            return 0;
+            return 1; // Nothing yet, retry
             
         default:
             break;
     }
     
     // Now read
-    MRH_CurrentStreamMessage* p_Recieve = p_Stream->p_Recieve;
+    MRH_CurrentStreamMessage* p_Recieve = &(p_Stream->c_Recieve);
     ssize_t ss_Read;
-    
-    MRH_UpdateReadSize(p_Recieve);
-    
-    size_t us_Remaining = p_Recieve->u32_SizeTotal - p_Recieve->u32_SizeHandled;
+    MRH_Uint32 u32_ReadSize;
     
     do
     {
-        ss_Read = read(p_Stream->i_MessageFD, 
-                       &(p_Recieve->p_Buffer[p_Recieve->u32_SizeHandled]), 
-                       us_Remaining);
+        // We need the current read size first
+        u32_ReadSize = MRH_GetReadSize(p_Recieve);
         
+        // All read?
+        if (u32_ReadSize == p_Stream->c_Recieve.u32_Handled)
+        {
+            // Correct to remove size value
+            u32_ReadSize -= sizeof(MRH_Uint32);
+            
+            // Copy read info
+            *p_Size = u32_ReadSize;
+            memcpy(p_Buffer,
+                   &(p_Recieve->p_Buffer[sizeof(MRH_Uint32)]),
+                   u32_ReadSize);
+            
+            // Reset handled
+            MRH_ResetMessage(&(p_Stream->c_Recieve));
+            
+            // Finished
+            return 0;
+        }
+        
+        // We need more data, read
+        ss_Read = read(p_Stream->i_MessageFD, 
+                       &(p_Recieve->p_Buffer[p_Recieve->u32_Handled]), 
+                       u32_ReadSize - p_Recieve->u32_Handled);
+        
+        // Failed?
         if (ss_Read < 0)
         {
             if (errno != EWOULDBLOCK && errno != EAGAIN)
@@ -304,43 +295,13 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
                 return -1;
             }
         }
-        else if (us_Remaining == 0)
-        {
-            if (MRH_UpdateReadSize(p_Recieve) < 0)
-            {
-                break;
-            }
-            
-            // Realloc to to match buffer
-            if (p_Recieve->u32_SizeTotal > p_Recieve->u32_SizeBuffer)
-            {
-                MRH_Uint8* p_Buffer = (MRH_Uint8*)realloc(p_Recieve->p_Buffer, p_Recieve->u32_SizeTotal);
-            
-                if (p_Buffer == NULL)
-                {
-                    MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_MALLOC);
-                    return -1;
-                }
-                
-                p_Recieve->p_Buffer = p_Buffer;
-                p_Recieve->u32_SizeBuffer = p_Recieve->u32_SizeTotal;
-            }
-            
-            us_Remaining = p_Recieve->u32_SizeTotal - p_Recieve->u32_SizeHandled;
-        }
         else
         {
-            us_Remaining -= ss_Read;
-            p_Recieve->u32_SizeHandled += ss_Read;
+            // Add newly read bytes
+            p_Recieve->u32_Handled += ss_Read;
         }
     }
     while (ss_Read > 0);
-    
-    if (us_Remaining == 0)
-    {
-        // Finished
-        return 0;
-    }
     
     // Unfinished
     return 1;
@@ -350,29 +311,58 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS)
 // Write
 //*************************************************************************************
 
-int MRH_LS_Write(MRH_LocalStream* p_Stream)
+int MRH_LS_Write(MRH_LocalStream* p_Stream, const MRH_Uint8* p_Buffer, MRH_Uint32 u32_Size)
 {
     if (p_Stream == NULL || p_Stream->i_MessageFD < 0)
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
         return -1;
     }
-    else if (MRH_LS_GetMessageSet(p_Stream) < 0)
+    
+    // Replace with given buffer?
+    MRH_CurrentStreamMessage* p_Send = &(p_Stream->c_Send);
+    
+    if (p_Send->u32_Handled == MRH_GetTotalSize(p_Send))
     {
-        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_MESSAGE_NO_DATA);
-        return -1;
+        // Valid source given?
+        if (p_Buffer == NULL || u32_Size > STREAM_MESSAGE_SEND_BUFFER_SIZE - (sizeof(MRH_Uint32) * 2))
+        {
+            MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
+            return -1;
+        }
+        else
+        {
+            p_Send->u32_Handled = u32_Size + sizeof(MRH_Uint32);
+            
+            memcpy(p_Send->p_Buffer, &u32_Size, sizeof(MRH_Uint32));
+            memcpy(&(p_Send->p_Buffer[sizeof(MRH_Uint32)]), p_Buffer, u32_Size);
+        }
     }
     
-    MRH_CurrentStreamMessage* p_Send = p_Stream->p_Send;
+    // Set, now write
     ssize_t ss_Write;
-    size_t us_Remaining = p_Send->u32_SizeTotal - p_Send->u32_SizeHandled;
+    MRH_Uint32 u32_WriteSize;
     
     do
     {
-        ss_Write = write(p_Stream->i_MessageFD, 
-                         &(p_Send->p_Buffer[p_Send->u32_SizeHandled]), 
-                         us_Remaining);
+        // First get remaining write size
+        u32_WriteSize = MRH_GetTotalSize(p_Send) - p_Send->u32_Handled;
         
+        // Check total written
+        if (u32_WriteSize == 0)
+        {
+            // Reset handled
+            MRH_ResetMessage(&(p_Stream->c_Recieve));
+            
+            // Finished
+            return 0;
+        }
+        
+        ss_Write = write(p_Stream->i_MessageFD, 
+                         &(p_Send->p_Buffer[p_Send->u32_Handled]), 
+                         u32_WriteSize);
+        
+        // Failed to write?
         if (ss_Write < 0)
         {
             if (errno != EWOULDBLOCK && errno != EAGAIN)
@@ -381,20 +371,21 @@ int MRH_LS_Write(MRH_LocalStream* p_Stream)
                 return -1;
             }
         }
-        
-        p_Send->u32_SizeHandled += ss_Write;
-        us_Remaining -= ss_Write;
+        else
+        {
+            // Add bytes written
+            p_Send->u32_Handled += ss_Write;
+        }
     }
-    while (ss_Write > 0 && us_Remaining > 0);
-    
-    if (us_Remaining == 0)
-    {
-        // Finished
-        return 0;
-    }
+    while (ss_Write > 0);
     
     // Not finished
     return 1;
+}
+
+int MRH_LS_WriteContinue(MRH_LocalStream* p_Stream)
+{
+    return MRH_LS_Write(p_Stream, NULL, 0);
 }
 
 //*************************************************************************************
@@ -412,8 +403,7 @@ void MRH_LS_Disconnect(MRH_LocalStream* p_Stream)
     close(p_Stream->i_MessageFD);
     p_Stream->i_MessageFD = -1;
     
-    // @NOTE: No reset, only on connect! Messages of disconnected stream can be 
-    //        read later
+    // @NOTE: No reset, only on connect!
 }
 
 //*************************************************************************************
@@ -439,9 +429,6 @@ MRH_LocalStream* MRH_LS_Close(MRH_LocalStream* p_Stream)
     
     unlink(p_Stream->p_FilePath);
     
-    CloseCurrentMessage(p_Stream->p_Recieve);
-    CloseCurrentMessage(p_Stream->p_Send);
-    
     free(p_Stream);
     
     return NULL;
@@ -457,342 +444,6 @@ int MRH_LS_GetConnected(MRH_LocalStream* p_Stream)
     {
         return -1;
     }
-    
-    return 0;
-}
-
-static inline MRH_StreamMessage MRH_GetStreamMessageType(MRH_CurrentStreamMessage* p_Message)
-{
-    // @NOTE: Not buffer size, but total read size
-    if (p_Message->u32_SizeTotal < (sizeof(MRH_Uint32) * 2))
-    {
-        return MRH_LSM_UNK;
-    }
-    
-    // Message id is at pos 4, 4 long
-    return (MRH_StreamMessage)(*((MRH_Uint32*)&(p_Message->p_Buffer[sizeof(MRH_Uint32)])));
-}
-
-static inline void MRH_GetStreamMessageData(MRH_CurrentStreamMessage* p_Message, MRH_Uint8** p_Buffer, MRH_Uint32* p_SizeTotal)
-{
-    MRH_Uint32 u32_Required = sizeof(MRH_Uint32) * 2;
-    
-    if (p_Buffer != NULL)
-    {
-        if (p_Message->u32_SizeTotal > u32_Required)
-        {
-            *p_Buffer = &(p_Message->p_Buffer[u32_Required]);
-        }
-        else
-        {
-            *p_Buffer = NULL;
-        }
-    }
-    
-    if (p_SizeTotal != NULL)
-    {
-        if (p_Message->u32_SizeTotal >= u32_Required)
-        {
-            *p_SizeTotal = p_Message->u32_SizeTotal - u32_Required;
-        }
-        else
-        {
-            *p_SizeTotal = 0;
-        }
-    }
-}
-
-MRH_StreamMessage MRH_LS_GetLastMessage(MRH_LocalStream* p_Stream)
-{
-    if (p_Stream == NULL)
-    {
-        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-        return MRH_LSM_UNK;
-    }
-    
-    return MRH_GetStreamMessageType(p_Stream->p_Recieve);
-}
-
-int MRH_LS_GetLastMessageData(MRH_LocalStream* p_Stream, void* p_Data)
-{
-    if (p_Stream == NULL || p_Data == NULL)
-    {
-        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-        return -1;
-    }
-    
-    // Get the size and buffer of the message data.
-    MRH_Uint8* p_Buffer;
-    MRH_Uint32 u32_SizeTotal;
-    
-    MRH_GetStreamMessageData(p_Stream->p_Recieve, &p_Buffer, &u32_SizeTotal);
-    
-    // Next reset the message, so that reading works even after a 
-    // failure
-    p_Stream->p_Recieve->u32_SizeTotal = 0;
-    p_Stream->p_Recieve->u32_SizeHandled = 0;
-    
-    // Can get message data?
-    if (p_Buffer == NULL)
-    {
-        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-        return -1;
-    }
-    
-    switch (MRH_GetStreamMessageType(p_Stream->p_Recieve))
-    {
-        case MRH_LSM_VERSION:
-        {
-            ((MRH_LSM_Version_Data*)p_Data)->u32_Version = *((MRH_Uint32*)p_Buffer);
-            break;
-        }
-        case MRH_LSM_CUSTOM:
-        {
-            MRH_LSM_Custom_Data* p_Custom = (MRH_LSM_Custom_Data*)p_Data;
-            
-            p_Custom->u32_Size = u32_SizeTotal;
-            
-            if ((p_Custom->p_Buffer = (MRH_Uint8*)malloc(p_Custom->u32_Size)) == NULL)
-            {
-                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_MALLOC);
-                return -1;
-            }
-            
-            memcpy(p_Custom->p_Buffer, p_Buffer, u32_SizeTotal);
-            break;
-        }
-        case MRH_LSM_STRING:
-        {
-            MRH_LSM_String_Data* p_String = (MRH_LSM_String_Data*)p_Data;
-            
-            p_String->u32_Size = u32_SizeTotal;
-            
-            if ((p_String->p_String = (char*)malloc(p_String->u32_Size)) == NULL)
-            {
-                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_MALLOC);
-                return -1;
-            }
-            
-            memcpy(p_String->p_String, p_Buffer, u32_SizeTotal);
-            break;
-        }
-        case MRH_LSM_AUDIO:
-        {
-            MRH_LSM_Audio_Data* p_Audio = (MRH_LSM_Audio_Data*)p_Data;
-            
-            p_Audio->u8_Channels = p_Buffer[0];
-            p_Audio->u32_KHz = *((MRH_Uint32*)&(p_Buffer[sizeof(MRH_Uint8)]));
-            
-            MRH_Uint32 u32_Start = sizeof(MRH_Uint8) + sizeof(MRH_Uint32);
-            size_t us_SampleSize = u32_SizeTotal - u32_Start;
-            
-            if ((p_Audio->p_Samples = (MRH_Sint16*)malloc(us_SampleSize)) == NULL)
-            {
-                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_MALLOC);
-                return -1;
-            }
-            
-            memcpy(p_Audio->p_Samples, &(p_Buffer[u32_Start]), us_SampleSize);
-            break;
-        }
-        case MRH_LSM_LOCATION:
-        {
-            MRH_LSM_Location_Data* p_Location = (MRH_LSM_Location_Data*)p_Data;
-            
-            memcpy(&(p_Location->f64_Latitude), p_Buffer, sizeof(MRH_Sfloat64));
-            memcpy(&(p_Location->f64_Longtitude), &(p_Buffer[sizeof(MRH_Sfloat64)]), sizeof(MRH_Sfloat64));
-            memcpy(&(p_Location->f64_Elevation), &(p_Buffer[sizeof(MRH_Sfloat64) * 2]), sizeof(MRH_Sfloat64));
-            memcpy(&(p_Location->f64_Facing), &(p_Buffer[sizeof(MRH_Sfloat64) * 3]), sizeof(MRH_Sfloat64));
-            break;
-        }
-            
-        default:
-        {
-            MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_MESSAGE_NO_DATA);
-            return -1;
-        }
-    }
-    
-    return 0;
-}
-
-int MRH_LS_GetMessageSet(MRH_LocalStream* p_Stream)
-{
-    if (p_Stream == NULL)
-    {
-        return -1;
-    }
-    
-    MRH_CurrentStreamMessage* p_Send = p_Stream->p_Send;
-    
-    if (p_Send->u32_SizeTotal > 0 && p_Send->u32_SizeTotal > p_Send->u32_SizeHandled)
-    {
-        return 0;
-    }
-    
-    return -1;
-}
-
-//*************************************************************************************
-// Setters
-//*************************************************************************************
-
-int MRH_LS_SetMessage(MRH_LocalStream* p_Stream, MRH_StreamMessage e_Message, const void* p_Data)
-{
-    if (p_Stream == NULL || e_Message > MRH_STREAM_MESSAGE_MAX)
-    {
-        MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-        return -1;
-    }
-    
-    MRH_CurrentStreamMessage* p_Send = p_Stream->p_Send;
-    MRH_Uint32 u32_Message = e_Message;
-    
-    // Get the required size first
-    switch (u32_Message)
-    {
-        case MRH_LSM_VERSION:
-        {
-            if (p_Data == NULL)
-            {
-                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-                return -1;
-            }
-            
-            p_Send->u32_SizeTotal = sizeof(MRH_Uint32);
-            break;
-        }
-        case MRH_LSM_CUSTOM:
-        {
-            if (p_Data != NULL)
-            {
-                p_Send->u32_SizeTotal = ((const MRH_LSM_Custom_Data*)p_Data)->u32_Size;
-            }
-            else
-            {
-                p_Send->u32_SizeTotal = 0;
-            }
-            break;
-        }
-        case MRH_LSM_STRING:
-        {
-            if (p_Data == NULL)
-            {
-                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-                return -1;
-            }
-            
-            p_Send->u32_SizeTotal = ((const MRH_LSM_String_Data*)p_Data)->u32_Size;
-            break;
-        }
-        case MRH_LSM_AUDIO:
-        {
-            if (p_Data == NULL)
-            {
-                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-                return -1;
-            }
-            
-            const MRH_LSM_Audio_Data* p_Audio = (const MRH_LSM_Audio_Data*)p_Data;
-            
-            p_Send->u32_SizeTotal = sizeof(MRH_Uint8) + sizeof(MRH_Uint32);
-            p_Send->u32_SizeTotal += p_Audio->u32_Samples * sizeof(MRH_Sint16);
-            break;
-        }
-        case MRH_LSM_LOCATION:
-        {
-            if (p_Data == NULL)
-            {
-                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
-                return -1;
-            }
-            
-            p_Send->u32_SizeTotal = sizeof(MRH_Sfloat64) * 4;
-            break;
-        }
-            
-        default:
-        {
-            break;
-        }
-    }
-    
-    // Apennd message and size bytes
-    p_Send->u32_SizeTotal += (sizeof(MRH_Uint32) * 2);
-    
-    // Do we need to expand the send buffer?
-    if (p_Send->u32_SizeBuffer < p_Send->u32_SizeTotal)
-    {
-        MRH_Uint8* p_Buffer = (MRH_Uint8*)realloc(p_Send->p_Buffer, p_Send->u32_SizeTotal);
-        
-        if (p_Buffer == NULL)
-        {
-            MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_MALLOC);
-            return -1;
-        }
-        
-        p_Send->p_Buffer = p_Buffer;
-        p_Send->u32_SizeBuffer = p_Send->u32_SizeTotal;
-    }
-    
-    // Copy message info
-    memcpy(p_Send->p_Buffer, &(p_Send->u32_SizeTotal), sizeof(MRH_Uint32));
-    memcpy(&(p_Send->p_Buffer[sizeof(MRH_Uint32)]), &u32_Message, sizeof(MRH_Uint32));
-    
-    // Copy message data
-    MRH_Uint8* p_Buffer;
-    MRH_Uint32 u32_SizeTotal;
-    
-    MRH_GetStreamMessageData(p_Send, &p_Buffer, &u32_SizeTotal);
-    
-    switch (u32_Message)
-    {
-        case MRH_LSM_VERSION:
-        {
-            memcpy(p_Buffer, &(((MRH_LSM_Version_Data*)p_Data)->u32_Version), u32_SizeTotal);
-            break;
-        }
-        case MRH_LSM_CUSTOM:
-        {
-            if (p_Data != NULL)
-            {
-                memcpy(p_Buffer, ((MRH_LSM_Custom_Data*)p_Data)->p_Buffer, u32_SizeTotal);
-            }
-            break;
-        }
-        case MRH_LSM_STRING:
-        {
-            memcpy(p_Buffer, ((MRH_LSM_String_Data*)p_Data)->p_String, u32_SizeTotal);
-            break;
-        }
-        case MRH_LSM_AUDIO:
-        {
-            const MRH_LSM_Audio_Data* p_Audio = (const MRH_LSM_Audio_Data*)p_Data;
-            
-            memcpy(p_Buffer, &(p_Audio->u8_Channels), sizeof(MRH_Uint8));
-            memcpy(&(p_Buffer[sizeof(MRH_Uint8)]), &(p_Audio->u32_KHz), sizeof(MRH_Uint32));
-            memcpy(&(p_Buffer[sizeof(MRH_Uint32)]), p_Audio->p_Samples, p_Audio->u32_Samples * sizeof(MRH_Sint16));
-            break;
-        }
-        case MRH_LSM_LOCATION:
-        {
-            const MRH_LSM_Location_Data* p_Location = (const MRH_LSM_Location_Data*)p_Data;
-            
-            memcpy(p_Buffer, &(p_Location->f64_Latitude), sizeof(MRH_Sfloat64));
-            memcpy(&(p_Buffer[sizeof(MRH_Sfloat64)]), &(p_Location->f64_Longtitude), sizeof(MRH_Sfloat64));
-            memcpy(&(p_Buffer[sizeof(MRH_Sfloat64) * 2]), &(p_Location->f64_Elevation), sizeof(MRH_Sfloat64));
-            memcpy(&(p_Buffer[sizeof(MRH_Sfloat64) * 3]), &(p_Location->f64_Facing), sizeof(MRH_Sfloat64));
-            break;
-        }
-            
-        default:
-        {
-            break;
-        }
-    }
-    
-    // Setup sending info
-    p_Send->u32_SizeHandled = 0;
     
     return 0;
 }

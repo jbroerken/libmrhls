@@ -31,6 +31,10 @@
 // Project
 #include "../../include/libmrhls/libmrhls/MRH_LocalStream.h"
 
+// Pre-defined
+#define LOCAL_STREAM_FILE_PATH_SIZE 1024
+#define STREAM_MESSAGE_SEND_BUFFER_SIZE 2048
+
 
 #ifdef __cplusplus
 extern "C"
@@ -43,10 +47,8 @@ extern "C"
     
     typedef struct MRH_CurrentStreamMessage_t
     {
-        MRH_Uint32 u32_SizeBuffer;
-        MRH_Uint32 u32_SizeTotal;
-        MRH_Uint32 u32_SizeHandled;
-        MRH_Uint8* p_Buffer;
+        MRH_Uint8 p_Buffer[STREAM_MESSAGE_SEND_BUFFER_SIZE];
+        MRH_Uint32 u32_Handled;
         
     }MRH_CurrentStreamMessage;
     
@@ -59,11 +61,11 @@ extern "C"
         int i_ConnectionFD;
         int i_MessageFD;
         
-        char p_FilePath[2048];
+        char p_FilePath[LOCAL_STREAM_FILE_PATH_SIZE];
         int i_IsServer;
         
-        MRH_CurrentStreamMessage* p_Send;
-        MRH_CurrentStreamMessage* p_Recieve;
+        MRH_CurrentStreamMessage c_Send;
+        MRH_CurrentStreamMessage c_Recieve;
     };
     
 #ifdef __cplusplus

@@ -38,7 +38,7 @@ extern "C"
 #endif
     
     //*************************************************************************************
-    // Object
+    // Types
     //*************************************************************************************
     
     struct MRH_LocalStream_t;
@@ -83,11 +83,13 @@ extern "C"
      *  
      *  \param p_Stream The stream to read from.
      *  \param i_TimeoutMS The time in milliseconds to wait for data.
-     *  
+     *  \param p_Buffer The buffer to read to.
+     *  \param p_Size The read size in bytes.
+     *    
      *  \return 1 if unfinished, 0 if finished and -1 on failure.
      */
     
-    extern int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS);
+    extern int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS, MRH_Uint8* p_Buffer, MRH_Uint32* p_Size);
     
     //*************************************************************************************
     // Write
@@ -97,11 +99,23 @@ extern "C"
      *  Write to a local stream.
      *  
      *  \param p_Stream The stream to write to.
+     *  \param p_Buffer The buffer to write.
+     *  \param u32_Size The size to write in bytes.
      *  
      *  \return 1 if unfinished, 0 if finished and -1 on failure.
      */
     
-    extern int MRH_LS_Write(MRH_LocalStream* p_Stream);
+    extern int MRH_LS_Write(MRH_LocalStream* p_Stream, const MRH_Uint8* p_Buffer, MRH_Uint32 u32_Size);
+    
+    /**
+     *  Continue writing to a local stream.
+     *  
+     *  \param p_Stream The stream to write to.
+     *  
+     *  \return 1 if unfinished, 0 if finished and -1 on failure.
+     */
+    
+    extern int MRH_LS_WriteContinue(MRH_LocalStream* p_Stream);
     
     //*************************************************************************************
     // Disconnect
@@ -143,52 +157,6 @@ extern "C"
     
     extern int MRH_LS_GetConnected(MRH_LocalStream* p_Stream);
     
-    /**
-     *  Get the currently read local stream message.
-     *  
-     *  \param p_Stream The stream to check.  
-     *  
-     *  \return The read message on success, MRH_LSM_UNK on failure or nothing read.
-     */
-    
-    extern MRH_StreamMessage MRH_LS_GetLastMessage(MRH_LocalStream* p_Stream);
-    
-    /**
-     *  Get the last read local stream message data.
-     *  
-     *  \param p_Stream The stream to check.    
-     *  \param p_Data The data to write to.
-     *  
-     *  \return 0 on success, -1 on failure.
-     */
-    
-    extern int MRH_LS_GetLastMessageData(MRH_LocalStream* p_Stream, void* p_Data);
-    
-    /**
-     *  Check if a message to write is set.
-     *  
-     *  \param p_Stream The stream to check.      
-     *  
-     *  \return 0 if set, -1 if not.
-     */
-    
-    extern int MRH_LS_GetMessageSet(MRH_LocalStream* p_Stream);
-    
-    //*************************************************************************************
-    // Setters
-    //*************************************************************************************
-    
-    /**
-     *  Set the stream message to write on a local stream.
-     *  
-     *  \param p_Stream The stream to write with.
-     *  \param e_Message The stream message to write.
-     *  \param p_Data The stream message data to write.
-     *  
-     *  \return 0 on success, -1 on failure.
-     */
-    
-    extern int MRH_LS_SetMessage(MRH_LocalStream* p_Stream, MRH_StreamMessage e_Message, const void* p_Data);
     
 #ifdef __cplusplus
 }

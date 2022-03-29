@@ -64,6 +64,7 @@ set(INCLUDE_DIR_PATH "${CMAKE_SOURCE_DIR}/include/")
 set(SRC_LIST_BASE "${SRC_DIR_PATH}/libmrhls/Error/MRH_LocalStreamError.c"
                   "${SRC_DIR_PATH}/libmrhls/Error/MRH_LocalStreamErrorInternal.h"
                   "${SRC_DIR_PATH}/libmrhls/MRH_LocalStreamRevision.c"
+                  "${SRC_DIR_PATH}/libmrhls/MRH_StreamMessage.c"
                   "${SRC_DIR_PATH}/libmrhls/MRH_LocalStream.c"
                   "${SRC_DIR_PATH}/libmrhls/MRH_LocalStreamInternal.h"
                   "${INCLUDE_DIR_PATH}/libmrhls/libmrhls/Error/MRH_LocalStreamError.h"

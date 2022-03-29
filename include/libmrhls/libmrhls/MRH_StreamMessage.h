@@ -32,6 +32,7 @@
 // Project
 
 // Pre-defined
+#define STREAM_MESSAGE_BUFFER_SIZE 2044 // Exclude total size
 #define MRH_STREAM_MESSAGE_VERSION 1
 
 
@@ -50,95 +51,93 @@ extern "C"
          *  Unk
          */
         
-        MRH_LSM_UNK = 0,
+        MRH_LS_M_UNK = 0,
         
         /**
          *  Version
          */
         
-        MRH_LSM_VERSION = 1,
+        MRH_LS_M_VERSION = 1,
         
         /**
          *  Custom
          */
         
-        MRH_LSM_CUSTOM = 2,
+        MRH_LS_M_CUSTOM = 2,
         
         /**
          *  String
          */
         
-        MRH_LSM_STRING = 3,
+        MRH_LS_M_STRING = 3,
         
         /**
          *  Audio
          */
         
-        MRH_LSM_AUDIO = 4,
-        MRH_LSM_AUDIO_PLAYBACK_FINISHED = 5,
-        MRH_LSM_AUDIO_START_RECORDING = 6,
-        MRH_LSM_AUDIO_STOP_RECORDING = 7,
+        MRH_LS_M_AUDIO = 4,
+        MRH_LS_M_AUDIO_PLAYBACK_FINISHED = 5,
+        MRH_LS_M_AUDIO_START_RECORDING = 6,
+        MRH_LS_M_AUDIO_STOP_RECORDING = 7,
         
         /**
          *  Location
          */
         
-        MRH_LSM_LOCATION,
+        MRH_LS_M_LOCATION,
         
         /**
          *  Bounds
          */
         
-        MRH_STREAM_MESSAGE_MAX = MRH_LSM_LOCATION,
+        MRH_LS_MESSAGE_MAX = MRH_LS_M_LOCATION,
         
-        MRH_STREAM_MESSAGE_COUNT = MRH_STREAM_MESSAGE_MAX + 1
+        MRH_LS_MESSAGE_COUNT = MRH_LS_MESSAGE_MAX + 1
         
-    }MRH_StreamMessage;
+    }MRH_LS_Message;
     
     //*************************************************************************************
     // Version
     //*************************************************************************************
     
-    typedef struct MRH_LSM_Version_Data_t
+    typedef struct MRH_LS_M_Version_Data_t
     {
         MRH_Uint32 u32_Version;
         
-    }MRH_LSM_Version_Data;
+    }MRH_LS_M_Version_Data;
     
     //*************************************************************************************
     // Custom
     //*************************************************************************************
     
-    typedef struct MRH_LSM_Custom_Data_t
+    typedef struct MRH_LS_M_Custom_Data_t
     {
         MRH_Uint32 u32_Size;
-        MRH_Uint8* p_Buffer;
+        MRH_Uint8 p_Buffer[STREAM_MESSAGE_BUFFER_SIZE - sizeof(MRH_Uint32)];
         
-    }MRH_LSM_Custom_Data;
+    }MRH_LS_M_Custom_Data;
     
     //*************************************************************************************
     // String
     //*************************************************************************************
     
-    typedef struct MRH_LSM_String_Data_t
+    typedef struct MRH_LS_M_String_Data_t
     {
-        MRH_Uint32 u32_Size; // Bytes
-        char* p_String; // UTF-8
+        char p_String[STREAM_MESSAGE_BUFFER_SIZE]; // UTF-8
         
-    }MRH_LSM_String_Data;
+    }MRH_LS_M_String_Data;
     
     //*************************************************************************************
     // Audio
     //*************************************************************************************
     
-    typedef struct MRH_LSM_Audio_Data_t
+    typedef struct MRH_LS_M_Audio_Data_t
     {
-        MRH_Uint8 u8_Channels;
         MRH_Uint32 u32_KHz;
         MRH_Uint32 u32_Samples;
-        MRH_Sint16* p_Samples; // PCM-16
+        MRH_Sint16 p_Samples[STREAM_MESSAGE_BUFFER_SIZE - (sizeof(MRH_Uint32) * 2)]; // Mono
         
-    }MRH_LSM_Audio_Data;
+    }MRH_LS_M_Audio_Data;
     
     // @NOTE: No data for MRH_LSM_AUDIO_PLAYBACK_FINISHED
     
@@ -157,7 +156,48 @@ extern "C"
         MRH_Sfloat64 f64_Elevation;
         MRH_Sfloat64 f64_Facing;
         
-    }MRH_LSM_Location_Data;
+    }MRH_LS_M_Location_Data;
+    
+    //*************************************************************************************
+    // Buffer
+    //*************************************************************************************
+    
+    /**
+     *  Fill a buffer with a given message struct.
+     *  
+     *  \param p_Buffer The buffer to fill. The buffer has to be of size 
+     *                  STREAM_MESSAGE_BUFFER_SIZE.
+     *  \param p_Size The buffer size of the written buffer.
+     *  \param e_Message The message type.
+     *  \param p_Data The message data.
+     *  
+     *  \return 0 on success, -1 on failure.
+     */
+    
+    extern int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Message e_Message, const void* p_Data);
+    
+    /**
+     *  Get the message type of a buffer.
+     *  
+     *  \param p_Buffer The buffer to read. Has to be at least of size MRH_Uint32.
+     *  
+     *  \return The buffer message type.
+     */
+
+    extern MRH_LS_Message MRH_LS_GetBufferMessage(const MRH_Uint8* p_Buffer);
+    
+    /**
+     *  Fill a message struct with a given buffer.
+     *  
+     *  \param p_Data The message data.    
+     *  \param p_Buffer The buffer to read. The buffer has to be of size 
+     *                  STREAM_MESSAGE_BUFFER_SIZE.
+     *  \param u32_Size The buffer size of the given buffer.
+     *  
+     *  \return 0 on success, -1 on failure.
+     */
+    
+    extern int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u32_Size);
     
 #ifdef __cplusplus
 }
