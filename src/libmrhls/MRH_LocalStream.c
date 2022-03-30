@@ -275,7 +275,7 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS, MRH_Uint8* p_Buffer,
                    u32_ReadSize);
             
             // Reset handled
-            MRH_ResetMessage(&(p_Stream->c_Recieve));
+            MRH_ResetMessage(p_Recieve);
             
             // Finished
             return 0;
@@ -287,7 +287,7 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS, MRH_Uint8* p_Buffer,
                        u32_ReadSize - p_Recieve->u32_Handled);
         
         // Failed?
-        if (ss_Read < 0)
+        if (ss_Read <= 0)
         {
             if (errno != EWOULDBLOCK && errno != EAGAIN)
             {
@@ -332,10 +332,12 @@ int MRH_LS_Write(MRH_LocalStream* p_Stream, const MRH_Uint8* p_Buffer, MRH_Uint3
         }
         else
         {
-            p_Send->u32_Handled = u32_Size + sizeof(MRH_Uint32);
-            
-            memcpy(p_Send->p_Buffer, &u32_Size, sizeof(MRH_Uint32));
+            // Write buffer data first
             memcpy(&(p_Send->p_Buffer[sizeof(MRH_Uint32)]), p_Buffer, u32_Size);
+            
+            // Now add total write size
+            u32_Size += sizeof(MRH_Uint32);
+            memcpy(p_Send->p_Buffer, &u32_Size, sizeof(MRH_Uint32));
         }
     }
     
@@ -352,7 +354,7 @@ int MRH_LS_Write(MRH_LocalStream* p_Stream, const MRH_Uint8* p_Buffer, MRH_Uint3
         if (u32_WriteSize == 0)
         {
             // Reset handled
-            MRH_ResetMessage(&(p_Stream->c_Recieve));
+            MRH_ResetMessage(p_Send);
             
             // Finished
             return 0;
@@ -363,7 +365,7 @@ int MRH_LS_Write(MRH_LocalStream* p_Stream, const MRH_Uint8* p_Buffer, MRH_Uint3
                          u32_WriteSize);
         
         // Failed to write?
-        if (ss_Write < 0)
+        if (ss_Write <= 0)
         {
             if (errno != EWOULDBLOCK && errno != EAGAIN)
             {

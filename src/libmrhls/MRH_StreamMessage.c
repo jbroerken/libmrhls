@@ -23,6 +23,7 @@
 
 // C
 #include <string.h>
+#include <stdio.h>
 
 // External
 
@@ -72,11 +73,11 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
         case MRH_LS_M_STRING:
         {
             const MRH_LS_M_String_Data* p_Cast = (const MRH_LS_M_String_Data*)p_Data;
-            MRH_Uint32 u32_Size = strnlen(p_Cast->p_String, MRH_STREAM_MESSAGE_BUFFER_SIZE);
+            MRH_Uint32 u32_Length = strnlen(p_Cast->p_String, MRH_STREAM_MESSAGE_BUFFER_SIZE);
             
-            memcpy(p_Buffer, p_Cast->p_String, u32_Size);
+            memcpy(p_Buffer, p_Cast->p_String, u32_Length);
             
-            u32_TotalSize += u32_Size;
+            u32_TotalSize += u32_Length;
             break;
         }
         case MRH_LS_M_AUDIO:
