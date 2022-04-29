@@ -423,7 +423,11 @@ MRH_LocalStream* MRH_LS_Close(MRH_LocalStream* p_Stream)
     close(p_Stream->i_ConnectionFD);
     close(p_Stream->i_MessageFD);
     
-    unlink(p_Stream->p_FilePath);
+    // Only server unlinks
+    if (p_Stream->i_IsServer >= 0)
+    {
+        unlink(p_Stream->p_FilePath);
+    }
     
     free(p_Stream);
     
