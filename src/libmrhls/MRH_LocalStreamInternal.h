@@ -65,7 +65,7 @@ extern "C"
         int i_IsServer;
         
         MRH_CurrentStreamMessage c_Send;
-        MRH_CurrentStreamMessage c_Recieve;
+        MRH_CurrentStreamMessage c_Receive;
     };
     
 #ifdef __cplusplus

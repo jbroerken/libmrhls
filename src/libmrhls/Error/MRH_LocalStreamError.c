@@ -88,12 +88,6 @@ const char* MRH_ERR_GetLocalStreamErrorString(void)
         case MRH_LOCAL_STREAM_ERROR_SOCKET_POLL:
             return "Failed to poll socket";
             
-        // Message
-        case MRH_LOCAL_STREAM_ERROR_MESSAGE_NO_DATA:
-            return "No data for message";
-        case MRH_LOCAL_STREAM_ERROR_MESSAGE_AVAILABLE:
-            return "A read message is already available";
-            
         default:
             return NULL;
     }

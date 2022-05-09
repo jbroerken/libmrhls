@@ -76,7 +76,7 @@ static MRH_LocalStream* MRH_CreateStreamObject(const char* p_FilePath, int i_IsS
     }
     
     MRH_ResetMessage(&(p_Stream->c_Send));
-    MRH_ResetMessage(&(p_Stream->c_Recieve));
+    MRH_ResetMessage(&(p_Stream->c_Receive));
     
     p_Stream->i_ConnectionFD = -1;
     p_Stream->i_MessageFD = -1;
@@ -157,7 +157,7 @@ static int MRH_AcceptStreamConnection(MRH_LocalStream* p_Stream)
     // Reset current send state to send and recieve from
     // beginning (for currently set messages)
     MRH_ResetMessage(&(p_Stream->c_Send));
-    MRH_ResetMessage(&(p_Stream->c_Recieve));
+    MRH_ResetMessage(&(p_Stream->c_Receive));
     
     p_Stream->i_MessageFD = i_FD;
     
@@ -193,7 +193,7 @@ static int MRH_ConnectToStream(MRH_LocalStream* p_Stream)
     // Reset current send state to send and recieve from
     // beginning (for currently set messages)
     MRH_ResetMessage(&(p_Stream->c_Send));
-    MRH_ResetMessage(&(p_Stream->c_Recieve));
+    MRH_ResetMessage(&(p_Stream->c_Receive));
     
     p_Stream->i_MessageFD = i_FD;
     
@@ -253,7 +253,7 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS, MRH_Uint8* p_Buffer,
     }
     
     // Now read
-    MRH_CurrentStreamMessage* p_Recieve = &(p_Stream->c_Recieve);
+    MRH_CurrentStreamMessage* p_Recieve = &(p_Stream->c_Receive);
     ssize_t ss_Read;
     MRH_Uint32 u32_ReadSize;
     
@@ -263,7 +263,7 @@ int MRH_LS_Read(MRH_LocalStream* p_Stream, int i_TimeoutMS, MRH_Uint8* p_Buffer,
         u32_ReadSize = MRH_GetReadSize(p_Recieve);
         
         // All read?
-        if (u32_ReadSize == p_Stream->c_Recieve.u32_Handled)
+        if (u32_ReadSize == p_Stream->c_Receive.u32_Handled)
         {
             // Correct to remove size value
             u32_ReadSize -= sizeof(MRH_Uint32);
