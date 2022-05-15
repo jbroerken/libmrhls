@@ -14,6 +14,10 @@ Library Structs
 
   libmrhls_Directory/MRH_LocalStream/MRH_LocalStream_t
   libmrhls_Directory/MRH_StreamMessage/MRH_LS_M_Version_Data_t
+  libmrhls_Directory/MRH_StreamMessage/MRH_LS_M_Custom_Data_t
+  libmrhls_Directory/MRH_StreamMessage/MRH_LS_M_String_Data_t
+  libmrhls_Directory/MRH_StreamMessage/MRH_LS_M_Audio_Data_t
+  libmrhls_Directory/MRH_StreamMessage/MRH_LS_M_Location_Data_t
 
 Internal Structs
 ----------------

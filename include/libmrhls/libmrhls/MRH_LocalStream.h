@@ -83,7 +83,8 @@ extern "C"
      *  
      *  \param p_Stream The stream to read from.
      *  \param i_TimeoutMS The time in milliseconds to wait for data.
-     *  \param p_Buffer The buffer to read to.
+     *  \param p_Buffer The buffer to read to. The buffer has to be of size 
+     *                  STREAM_MESSAGE_BUFFER_SIZE.
      *  \param p_Size The read size in bytes.
      *    
      *  \return 1 if unfinished, 0 if finished and -1 on failure.
