@@ -21,6 +21,8 @@ on the libmrhev source.
    :caption: Contents:
 
    Building/Building
+   Usage/Usage
+   Messages/Messages
    Structs/Structs
    Enumerations/Enumerations
    Macros/Macros
