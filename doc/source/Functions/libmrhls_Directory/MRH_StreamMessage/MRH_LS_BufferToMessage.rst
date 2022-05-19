@@ -50,4 +50,26 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+    
+    // Define struct info
+    MRH_LS_M_Version_Data c_Version;
+    MRH_Uint8 p_Buffer[MRH_STREAM_MESSAGE_BUFFER_SIZE] = { '\0' };
+    MRH_Uint32 u32_Size;
+    
+    // Read message to buffer
+    // ...
+    
+    // Check message type
+    // ...
+    
+    // Convert to struct
+    if (MRH_LS_BufferToMessage(&c_Version, p_Buffer, u32_Size) < 0)
+    {
+        // Error ...
+    }
+    else
+    {
+        // Use message struct ...
+    }
+

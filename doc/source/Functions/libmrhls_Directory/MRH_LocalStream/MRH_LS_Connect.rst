@@ -45,4 +45,10 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    if (MRH_LS_Connect(p_Stream) < 0)
+    {
+        // Error ...
+    }
+

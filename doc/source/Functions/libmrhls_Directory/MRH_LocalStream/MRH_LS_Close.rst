@@ -41,4 +41,7 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    p_Stream = MRH_LS_Close(p_Stream);
+

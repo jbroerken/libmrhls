@@ -53,4 +53,19 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    // Message data
+    MRH_LS_M_Version_Data c_Version;
+    MRH_Uint8 p_Buffer[MRH_STREAM_MESSAGE_BUFFER_SIZE] = { '\0' };
+    MRH_Uint32 u32_Size;
+    
+    // Set message version number
+    c_Version = MRH_STREAM_MESSAGE_VERSION;
+    
+    // Convert message to buffer
+    if (MRH_LS_MessageToBuffer(p_Buffer, &u32_Size, MRH_LS_M_VERSION, &c_Version) < 0)
+    {
+        // Error ...
+    }
+

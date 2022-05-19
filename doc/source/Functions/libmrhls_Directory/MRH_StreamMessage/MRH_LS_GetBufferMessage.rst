@@ -42,4 +42,10 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    switch (MRH_LS_GetBufferMessage(p_Buffer))
+    {
+        // Handle by type ...
+    }
+

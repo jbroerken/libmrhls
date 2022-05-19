@@ -52,4 +52,24 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    MRH_Uint8 p_Buffer[MRH_STREAM_MESSAGE_BUFFER_SIZE] = { '\0' };
+    MRH_Uint32 u32_Size;
+    
+    while (1)
+    {
+        int i_Result = MRH_LS_Read(p_Stream, 100, p_Buffer, &u32_Size);
+        
+        if (i_Result < 0)
+        {
+            // Error ...
+        }
+        else if (i_Result == 1)
+        {
+            continue;
+        }
+        
+        // Read success ...
+    }
+

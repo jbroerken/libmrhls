@@ -41,4 +41,13 @@ None.
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    if (MRH_LS_GetWriteMessageSet(p_Stream) < 0)
+    {
+        // No message set
+    }
+    else
+    {
+        // Message set, keep writing
+    }

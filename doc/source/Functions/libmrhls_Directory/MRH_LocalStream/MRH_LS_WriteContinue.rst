@@ -43,4 +43,15 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    // Not fully written?
+    while (MRH_LS_GetWriteMessageSet(p_Stream) == 0)
+    {
+        // Continue sending
+        if (MRH_LS_WriteContinue(p_Stream) < 0)
+        {
+            // Error ...
+        }
+    }
+

@@ -48,4 +48,18 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    // Define message buffer info
+    MRH_Uint8 p_Buffer[MRH_STREAM_MESSAGE_BUFFER_SIZE] = { '\0' };
+    MRH_Uint32 u32_Size;
+
+    // Convert message struct to buffer
+    // ...
+    
+    // Send buffer for message
+    if (MRH_LS_Write(p_Stream, p_Buffer, u32_Size) < 0)
+    {
+        // Error ...
+    }
+

@@ -22,6 +22,22 @@ or the client disconnects.
 
     All functions will set library errors on failure. Make sure to check 
     these errors in case of a failure.
+    
+
+Only the main library header has to be included to use the event writing and 
+creation functions as well as all event data structs known to the library.
+
+.. code-block:: c
+
+    #include <libmrhls.h>
+
+
+Wanting to only work with the message struct info is possible by including the 
+MRH_StreamMessage header.
+
+.. code-block:: c
+
+    #include <libmrhls/MRH_StreamMessage.h>
 
 
 Creating a Stream

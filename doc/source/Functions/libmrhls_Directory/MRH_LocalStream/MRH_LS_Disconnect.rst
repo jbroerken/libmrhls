@@ -42,4 +42,7 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    MRH_LS_Disconnect(p_Stream);
+

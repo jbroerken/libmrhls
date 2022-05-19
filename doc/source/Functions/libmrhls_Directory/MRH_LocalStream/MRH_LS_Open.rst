@@ -43,4 +43,15 @@ None.
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    MRH_LocalStream* p_Stream;
+    int i_CreateSocket = -1;
+    
+    p_Stream = MRH_LS_Open("/path/to/socket", i_CreateSocket);
+    
+    if ((p_Stream == NULL)
+    {
+        // Error ...
+    }
+

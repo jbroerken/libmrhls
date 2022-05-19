@@ -42,4 +42,16 @@ Remarks
 
 Code Examples
 -------------
-None.
+.. code-block:: c
+
+    if (MRH_LS_GetConnected(p_Stream) < 0)
+    {
+        // Not connected
+    }
+    else
+    {
+        // Connected
+    }
+
+
+
