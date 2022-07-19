@@ -35,6 +35,9 @@
 #define MRH_STREAM_MESSAGE_BUFFER_SIZE 2044 // Exclude total size
 #define MRH_STREAM_MESSAGE_VERSION 1
 
+#define MRH_STREAM_MESSAGE_CUSTOM_BUFFER_SIZE (MRH_STREAM_MESSAGE_BUFFER_SIZE - sizeof(MRH_Uint32))
+#define MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE (MRH_STREAM_MESSAGE_BUFFER_SIZE - sizeof(MRH_Uint32))
+
 
 #ifdef __cplusplus
 extern "C"
@@ -113,7 +116,7 @@ extern "C"
     typedef struct MRH_LS_M_Custom_Data_t
     {
         MRH_Uint32 u32_Size;
-        MRH_Uint8 p_Buffer[MRH_STREAM_MESSAGE_BUFFER_SIZE - sizeof(MRH_Uint32)];
+        MRH_Uint8 p_Buffer[MRH_STREAM_MESSAGE_CUSTOM_BUFFER_SIZE];
         
     }MRH_LS_M_Custom_Data;
     
@@ -135,7 +138,7 @@ extern "C"
     {
         MRH_Uint32 u32_KHz;
         MRH_Uint32 u32_Samples; // Not included in buffer!
-        MRH_Sint16 p_Samples[MRH_STREAM_MESSAGE_BUFFER_SIZE - sizeof(MRH_Uint32)]; // Mono
+        MRH_Sint16 p_Samples[MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE]; // Mono
         
     }MRH_LS_M_Audio_Data;
     

@@ -65,7 +65,16 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
         {
             const MRH_LS_M_Custom_Data* p_Cast = (const MRH_LS_M_Custom_Data*)p_Data;
             
-            memcpy(p_Buffer, p_Cast->p_Buffer, p_Cast->u32_Size);
+            // Custom buffer size issues
+            if (p_Cast->u32_Size > MRH_STREAM_MESSAGE_CUSTOM_BUFFER_SIZE)
+            {
+                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
+                return -1;
+            }
+            else if (p_Cast->u32_Size > 0)
+            {
+                memcpy(p_Buffer, p_Cast->p_Buffer, p_Cast->u32_Size);
+            }
             
             u32_TotalSize += p_Cast->u32_Size;
             break;
@@ -74,6 +83,11 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
         {
             const MRH_LS_M_String_Data* p_Cast = (const MRH_LS_M_String_Data*)p_Data;
             MRH_Uint32 u32_Length = strnlen(p_Cast->p_String, MRH_STREAM_MESSAGE_BUFFER_SIZE);
+            
+            if (u32_Length > 0)
+            {
+                memcpy(p_Buffer, p_Cast->p_String, u32_Length);
+            }
             
             memcpy(p_Buffer, p_Cast->p_String, u32_Length);
             
@@ -86,7 +100,17 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
             MRH_Uint32 u32_SampleSize = p_Cast->u32_Samples * sizeof(MRH_Sint16);
             
             memcpy(p_Buffer, &(p_Cast->u32_KHz), sizeof(MRH_Uint32));
-            memcpy(&(p_Buffer[sizeof(MRH_Uint32)]), p_Cast->p_Samples, u32_SampleSize);
+            
+            // Samples buffer size issues
+            if (u32_SampleSize > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
+            {
+                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
+                return -1;
+            }
+            else if (u32_SampleSize > 0)
+            {
+                memcpy(&(p_Buffer[sizeof(MRH_Uint32)]), p_Cast->p_Samples, u32_SampleSize);
+            }
             
             u32_TotalSize += (sizeof(MRH_Uint32) + u32_SampleSize);
             break;
@@ -164,7 +188,16 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
             
             MRH_LS_M_Custom_Data* p_Cast = (MRH_LS_M_Custom_Data*)p_Data;
             
-            memcpy(p_Cast->p_Buffer, p_Buffer, p_Cast->u32_Size);
+            if (u32_Size > MRH_STREAM_MESSAGE_CUSTOM_BUFFER_SIZE)
+            {
+                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
+                return -1;
+            }
+            else if (u32_Size > 0)
+            {
+                memcpy(p_Cast->p_Buffer, p_Buffer, p_Cast->u32_Size);
+            }
+            
             p_Cast->u32_Size = u32_Size;
             break;
         }
@@ -179,7 +212,11 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
             MRH_LS_M_String_Data* p_Cast = (MRH_LS_M_String_Data*)p_Data;
             
             memset(p_Cast->p_String, '\0', MRH_STREAM_MESSAGE_BUFFER_SIZE);
-            memcpy(p_Cast->p_String, p_Buffer, u32_Size);
+            
+            if (u32_Size > 0)
+            {
+                memcpy(p_Cast->p_String, p_Buffer, u32_Size);
+            }
             break;
         }
         case MRH_LS_M_AUDIO:
@@ -193,7 +230,18 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
             MRH_LS_M_Audio_Data* p_Cast = (MRH_LS_M_Audio_Data*)p_Data;
             
             memcpy(&(p_Cast->u32_KHz), p_Buffer, sizeof(MRH_Uint32));
-            memcpy(p_Cast->p_Samples, &(p_Buffer[sizeof(MRH_Uint32)]), (u32_Size -= sizeof(MRH_Uint32)));
+            u32_Size -= sizeof(MRH_Uint32);
+            
+            if (u32_Size > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
+            {
+                MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
+                return -1;
+            }
+            else if (u32_Size > 0)
+            {
+                memcpy(p_Cast->p_Samples, &(p_Buffer[sizeof(MRH_Uint32)]), u32_Size);
+            }
+            
             p_Cast->u32_Samples = u32_Size / sizeof(MRH_Sint16);
             break;
         }
