@@ -15,3 +15,8 @@
 1.0.2:
 ------
 - The correct array size for audio samples is now reserved in a audio message.
+
+1.0.3:
+------
+- Fixed a bug which caused messages which used the full total message size
+  to fail converting.

@@ -32,7 +32,8 @@
 // Project
 
 // Pre-defined
-#define MRH_STREAM_MESSAGE_BUFFER_SIZE 2044 // Exclude total size
+#define MRH_STREAM_MESSAGE_TOTAL_SIZE 2048
+#define MRH_STREAM_MESSAGE_BUFFER_SIZE (MRH_STREAM_MESSAGE_TOTAL_SIZE - sizeof(MRH_Uint32)) // Total buffer size without type
 #define MRH_STREAM_MESSAGE_VERSION 1
 
 #define MRH_STREAM_MESSAGE_CUSTOM_BUFFER_SIZE (MRH_STREAM_MESSAGE_BUFFER_SIZE - sizeof(MRH_Uint32)) // In bytes
@@ -169,7 +170,7 @@ extern "C"
      *  Fill a buffer with a given message struct.
      *  
      *  \param p_Buffer The buffer to fill. The buffer has to be of size 
-     *                  STREAM_MESSAGE_BUFFER_SIZE.
+     *                  MRH_STREAM_MESSAGE_TOTAL_SIZE.
      *  \param p_Size The buffer size of the written buffer.
      *  \param e_Message The message type.
      *  \param p_Data The message data.
@@ -194,7 +195,7 @@ extern "C"
      *  
      *  \param p_Data The message data.    
      *  \param p_Buffer The buffer to read. The buffer has to be of size 
-     *                  STREAM_MESSAGE_BUFFER_SIZE.
+     *                  MRH_STREAM_MESSAGE_TOTAL_SIZE.
      *  \param u32_Size The buffer size of the given buffer.
      *  
      *  \return 0 on success, -1 on failure.

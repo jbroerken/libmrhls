@@ -97,9 +97,10 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
         case MRH_LS_M_AUDIO:
         {
             const MRH_LS_M_Audio_Data* p_Cast = (const MRH_LS_M_Audio_Data*)p_Data;
-            MRH_Uint32 u32_SampleSize = p_Cast->u32_Samples * sizeof(MRH_Sint16);
             
+            // Write KHz first
             memcpy(p_Buffer, &(p_Cast->u32_KHz), sizeof(MRH_Uint32));
+            p_Buffer += sizeof(MRH_Uint32);
             
             // Samples buffer size issues
             if (p_Cast->u32_Samples > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
@@ -107,9 +108,12 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
                 MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
                 return -1;
             }
-            else if (p_Cast->u32_Samples > 0)
+            
+            MRH_Uint32 u32_SampleSize = p_Cast->u32_Samples * sizeof(MRH_Sint16);
+            
+            if (p_Cast->u32_Samples > 0)
             {
-                memcpy(&(p_Buffer[sizeof(MRH_Uint32)]), p_Cast->p_Samples, u32_SampleSize);
+                memcpy(p_Buffer, p_Cast->p_Samples, u32_SampleSize);
             }
             
             u32_TotalSize += (sizeof(MRH_Uint32) + u32_SampleSize);
@@ -153,7 +157,7 @@ MRH_LS_Message MRH_LS_GetBufferMessage(const MRH_Uint8* p_Buffer)
 
 int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u32_Size)
 {
-    if (p_Buffer == NULL || p_Data == NULL || u32_Size > MRH_STREAM_MESSAGE_BUFFER_SIZE)
+    if (p_Buffer == NULL || p_Data == NULL || u32_Size > MRH_STREAM_MESSAGE_TOTAL_SIZE)
     {
         MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
         return -1;
@@ -195,7 +199,7 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
             }
             else if (u32_Size > 0)
             {
-                memcpy(p_Cast->p_Buffer, p_Buffer, p_Cast->u32_Size);
+                memcpy(p_Cast->p_Buffer, p_Buffer, u32_Size);
             }
             
             p_Cast->u32_Size = u32_Size;
@@ -229,9 +233,13 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
             
             MRH_LS_M_Audio_Data* p_Cast = (MRH_LS_M_Audio_Data*)p_Data;
             
+            // Write KHz first
             memcpy(&(p_Cast->u32_KHz), p_Buffer, sizeof(MRH_Uint32));
-            u32_Size -= sizeof(MRH_Uint32);
             
+            u32_Size -= sizeof(MRH_Uint32);
+            p_Buffer += sizeof(MRH_Uint32);
+            
+            // Now grab samples
             p_Cast->u32_Samples = u32_Size / sizeof(MRH_Sint16);
             
             if (p_Cast->u32_Samples > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
@@ -239,9 +247,9 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
                 MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
                 return -1;
             }
-            else if (p_Cast->u32_Samples > 0)
+            else if (u32_Size > 0)
             {
-                memcpy(p_Cast->p_Samples, &(p_Buffer[sizeof(MRH_Uint32)]), u32_Size);
+                memcpy(p_Cast->p_Samples, p_Buffer, u32_Size);
             }
             break;
         }
