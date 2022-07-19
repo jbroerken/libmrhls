@@ -102,12 +102,12 @@ int MRH_LS_MessageToBuffer(MRH_Uint8* p_Buffer, MRH_Uint32* p_Size, MRH_LS_Messa
             memcpy(p_Buffer, &(p_Cast->u32_KHz), sizeof(MRH_Uint32));
             
             // Samples buffer size issues
-            if (u32_SampleSize > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
+            if (p_Cast->u32_Samples > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
             {
                 MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
                 return -1;
             }
-            else if (u32_SampleSize > 0)
+            else if (p_Cast->u32_Samples > 0)
             {
                 memcpy(&(p_Buffer[sizeof(MRH_Uint32)]), p_Cast->p_Samples, u32_SampleSize);
             }
@@ -232,17 +232,17 @@ int MRH_LS_BufferToMessage(void* p_Data, const MRH_Uint8* p_Buffer, MRH_Uint32 u
             memcpy(&(p_Cast->u32_KHz), p_Buffer, sizeof(MRH_Uint32));
             u32_Size -= sizeof(MRH_Uint32);
             
-            if (u32_Size > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
+            p_Cast->u32_Samples = u32_Size / sizeof(MRH_Sint16);
+            
+            if (p_Cast->u32_Samples > MRH_STREAM_MESSAGE_AUDIO_BUFFER_SIZE)
             {
                 MRH_ERR_SetLocalStreamError(MRH_LOCAL_STREAM_ERROR_GENERAL_INVALID_PARAM);
                 return -1;
             }
-            else if (u32_Size > 0)
+            else if (p_Cast->u32_Samples > 0)
             {
                 memcpy(p_Cast->p_Samples, &(p_Buffer[sizeof(MRH_Uint32)]), u32_Size);
             }
-            
-            p_Cast->u32_Samples = u32_Size / sizeof(MRH_Sint16);
             break;
         }
         case MRH_LS_M_LOCATION:

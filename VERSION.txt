@@ -11,3 +11,7 @@
 1.0.1:
 ------
 - Fixed a bug allowing sample and custom buffer sizes to exceed their maximum.
+
+1.0.2:
+------
+- The correct array size for audio samples is now reserved in a audio message.

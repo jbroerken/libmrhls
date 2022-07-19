@@ -27,7 +27,7 @@ set(CMAKE_C_STANDARD 99)
 #  ------------
 #  General simple information about our project.
 ###
-project(libmrhls VERSION 1.0.0
+project(libmrhls VERSION 1.0.2
                  DESCRIPTION "MRH Platform local stream library"
                  LANGUAGES C)
 set(LIB_SO_VERSION 1)
